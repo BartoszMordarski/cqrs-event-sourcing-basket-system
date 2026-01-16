@@ -42,7 +42,10 @@ public class RedisEventStore implements EventStore {
 
     @Override
     public Set<String> getAllAggregateIds() {
-        return null;
+        Set<String> keys = basketEventRedisTemplate.keys(KEY_PREFIX + "*");
+        return keys != null ? keys.stream()
+                .map(key -> key.substring(KEY_PREFIX.length()))
+                .collect(Collectors.toSet()) : Set.of();
     }
 
     private String getKey(Event event) {

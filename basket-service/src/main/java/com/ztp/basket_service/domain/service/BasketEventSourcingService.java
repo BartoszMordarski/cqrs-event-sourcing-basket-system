@@ -17,8 +17,15 @@ public class BasketEventSourcingService {
     private final EventStore eventStore;
 
     public void appendEvent(BasketEvent event) {
-        int nextVersion = eventStore.getLatestVersion(event.getBasketId()) + 1;
         eventStore.store(event);
+    }
+
+    public List<Basket> findOpenBaskets() {
+        return eventStore.getAllAggregateIds()
+                .stream()
+                .map(this::reconstructBasket)
+                .filter(basket -> basket.getStatus() == BasketStatus.OPEN)
+                .toList();
     }
 
     public Basket reconstructBasket(String basketId) {
@@ -62,9 +69,8 @@ public class BasketEventSourcingService {
             case "ITEM_ADDED" -> handleItemAdded(basket, (ItemAddedEvent) event);
             case "ITEM_REMOVED" -> handleItemRemoved(basket, (ItemRemovedEvent) event);
             case "BASKET_CONFIRMED" -> basket.setStatus(BasketStatus.CONFIRMED);
-//            case "BASKET_EXPIRED" -> basket.setStatus(BasketStatus.EXPIRED);
+            case "BASKET_EXPIRED" -> basket.setStatus(BasketStatus.EXPIRED);
             case "ITEM_QUANTITY_UPDATED" -> handleQuantityUpdate(basket, (ItemQuantityUpdatedEvent) event);
-//            case "ITEM_PRICE_UPDATED" -> throw new UnsupportedOperationException("Item price updates are not supported");
             default -> throw new IllegalArgumentException("Unknown event type: " + event.getType());
         }
 
